@@ -1,0 +1,32 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/src/hooks/useAuth";
+
+type Props = {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+};
+
+export default function ProtectedRoute({ children, adminOnly = false }: Props) {
+  const router = useRouter();
+  const { loading, isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+    if (adminOnly && user?.role !== "ADMIN") {
+      router.replace("/dashboard");
+    }
+  }, [loading, isAuthenticated, adminOnly, user?.role, router]);
+
+  if (loading) return <p className="p-6">Loading...</p>;
+  if (!isAuthenticated) return null;
+  if (adminOnly && user?.role !== "ADMIN") return null;
+
+  return <>{children}</>;
+}
