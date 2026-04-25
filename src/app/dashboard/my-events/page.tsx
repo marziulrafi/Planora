@@ -25,11 +25,8 @@ const emptyForm = {
 export default function MyEventsPage() {
   const { user } = useAuth();
 
-  // Owned events (created by the current user)
   const [myEvents, setMyEvents] = useState<Event[]>([]);
-  // Events joined as a participant
   const [joinedEvents, setJoinedEvents] = useState<Participant[]>([]);
-  // Participants for a selected owned event
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
 
@@ -44,9 +41,7 @@ export default function MyEventsPage() {
       setLoading(true);
       setError(null);
       const [owned, joined] = await Promise.all([
-        // GET /events/my → only current user's events
         apiGetArray<Event>("/events/my"),
-        // GET /participants/my-events → Participant[] with event included
         apiGetArray<Participant>("/participants/my-events"),
       ]);
       setMyEvents(owned);

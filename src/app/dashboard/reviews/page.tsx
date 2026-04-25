@@ -18,11 +18,9 @@ export default function ReviewsPage() {
       setLoading(true);
       const [myReviews, participants] = await Promise.all([
         apiGetArray<Review>("/reviews/my"),
-        // Get events where user is an APPROVED participant (eligible to review)
         apiGetArray<Participant>("/participants/my-events"),
       ]);
       setReviews(myReviews);
-      // Only approved participants can write reviews
       setJoinedEvents(participants.filter((p) => p.status === "APPROVED"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load reviews");
@@ -35,7 +33,6 @@ export default function ReviewsPage() {
     void load();
   }, []);
 
-  // Already reviewed event IDs (can't review twice)
   const reviewedEventIds = new Set(reviews.map((r) => r.eventId));
 
   const eligibleEvents = joinedEvents.filter(

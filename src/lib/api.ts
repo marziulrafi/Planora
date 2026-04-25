@@ -1,43 +1,57 @@
 "use client";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-console.log("API URL:", BASE_URL);
 
 export class ApiError extends Error {
   status: number;
-
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
   }
 }
 
-async function parseResponse<T>(response: Response, skipUnauthorizedRedirect = false): Promise<T> {
-  const contentType = response.headers.get("content-type") || "";
-
+async function parseResponse<T>(
+  response: Response,
+  skipUnauthorizedRedirect = false
+): Promise<T> {
   if (!response.ok) {
-    const text = await response.text();
-    if (text.startsWith("<!DOCTYPE")) {
-      throw new Error("API route not found or wrong URL");
+    let message = "Request failed";
+    try {
+      const text = await response.text();
+      // Detect HTML error pages (wrong URL / server HTML response)
+      if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+        message = "API route not found or server returned HTML";
+      } else {
+        // Try to parse JSON error message
+        try {
+          const json = JSON.parse(text);
+          message = json.message || text || message;
+        } catch {
+          message = text || message;
+        }
+      }
+    } catch {
+      // ignore body parse error
     }
-    if (response.status === 401 && !skipUnauthorizedRedirect && typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
+
+    if (
+      response.status === 401 &&
+      !skipUnauthorizedRedirect &&
+      typeof window !== "undefined"
+    ) {
       window.location.href = "/login";
     }
-    console.error("API error:", response.status, text);
-    throw new ApiError(text || "Request failed", response.status);
+
+    throw new ApiError(message, response.status);
   }
 
+  const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
-    const text = await response.text();
-    if (text.startsWith("<!DOCTYPE")) {
-      throw new Error("API route not found or wrong URL");
-    }
-    throw new Error(text || "Response is not JSON");
+    return undefined as unknown as T;
   }
 
   const payload = await response.json();
-  console.log("API response:", payload);
+  // Unwrap { success: true, data: ... } envelope if present
   const normalized =
     payload && typeof payload === "object" && "data" in payload
       ? (payload as { data: unknown }).data
@@ -50,24 +64,31 @@ function toArray<T>(value: unknown): T[] {
   return [];
 }
 
-function buildAuthHeaders(extra?: Record<string, string>) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(extra || {}),
+/** All requests use credentials: "include" so session cookies are sent automatically. No tokens. */
+function commonOptions(method: string, body?: unknown): RequestInit {
+  const init: RequestInit = {
+    method,
+    credentials: "include",
+    headers: body !== undefined ? { "Content-Type": "application/json" } : {},
   };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+  }
+  return init;
 }
 
-export async function apiGet<T>(url: string, skipUnauthorizedRedirect = false): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: "GET",
-    credentials: "include",
-    headers: buildAuthHeaders(),
-  });
+export async function apiGet<T>(
+  url: string,
+  skipUnauthorizedRedirect = false
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${url}`, commonOptions("GET"));
   return parseResponse<T>(res, skipUnauthorizedRedirect);
 }
 
-export async function apiGetArray<T>(url: string, skipUnauthorizedRedirect = false): Promise<T[]> {
+export async function apiGetArray<T>(
+  url: string,
+  skipUnauthorizedRedirect = false
+): Promise<T[]> {
   const result = await apiGet<unknown>(url, skipUnauthorizedRedirect);
   return toArray<T>(result);
 }
@@ -77,26 +98,7 @@ export async function apiPost<T>(
   body?: unknown,
   skipUnauthorizedRedirect = false
 ): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: "POST",
-    credentials: "include",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  return parseResponse<T>(res, skipUnauthorizedRedirect);
-}
-
-export async function apiPut<T>(
-  url: string,
-  body?: unknown,
-  skipUnauthorizedRedirect = false
-): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const res = await fetch(`${BASE_URL}${url}`, commonOptions("POST", body));
   return parseResponse<T>(res, skipUnauthorizedRedirect);
 }
 
@@ -105,20 +107,23 @@ export async function apiPatch<T>(
   body?: unknown,
   skipUnauthorizedRedirect = false
 ): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: buildAuthHeaders({ "Content-Type": "application/json" }),
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const res = await fetch(`${BASE_URL}${url}`, commonOptions("PATCH", body));
   return parseResponse<T>(res, skipUnauthorizedRedirect);
 }
 
-export async function apiDelete<T>(url: string, skipUnauthorizedRedirect = false): Promise<T> {
-  const res = await fetch(`${BASE_URL}${url}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: buildAuthHeaders(),
-  });
+export async function apiPut<T>(
+  url: string,
+  body?: unknown,
+  skipUnauthorizedRedirect = false
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${url}`, commonOptions("PUT", body));
+  return parseResponse<T>(res, skipUnauthorizedRedirect);
+}
+
+export async function apiDelete<T>(
+  url: string,
+  skipUnauthorizedRedirect = false
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${url}`, commonOptions("DELETE"));
   return parseResponse<T>(res, skipUnauthorizedRedirect);
 }

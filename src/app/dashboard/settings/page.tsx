@@ -15,7 +15,6 @@ export default function SettingsPage() {
   );
   const [saving, setSaving] = useState(false);
 
-  // Initialize fields AFTER user loads from session (async)
   useEffect(() => {
     if (user) {
       setName(user.name ?? "");

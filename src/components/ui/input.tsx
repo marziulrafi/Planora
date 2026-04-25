@@ -9,7 +9,7 @@ export function Input({ label, className = "", ...props }: InputProps) {
     <label className="flex w-full flex-col gap-2 text-sm text-slate-700">
       {label ? <span className="font-medium text-slate-900">{label}</span> : null}
       <input
-        className={`w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-card transition focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100 ${className}`}
+        className={`w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${className}`}
         {...props}
       />
     </label>

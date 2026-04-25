@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { apiGet, apiPost } from "@/src/lib/api";
 import type { User } from "@/src/lib/types";
 
@@ -13,25 +20,17 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-let bootstrapPromise: Promise<void> | null = null;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
     try {
       setLoading(true);
       const res = await apiGet<User>("/auth/me", true);
       setUser(res);
-    } catch (error) {
-      console.error("Auth refresh failed:", error);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -40,23 +39,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiPost("/auth/sign-out", undefined, true);
+      await apiPost("/auth/sign-out", {}, true);
     } catch {
-      // ignore and clear local state
     } finally {
-      localStorage.removeItem("accessToken");
       setUser(null);
       window.location.href = "/login";
     }
   }, []);
 
   useEffect(() => {
-    if (!bootstrapPromise) {
-      bootstrapPromise = refreshUser().finally(() => {
-        bootstrapPromise = null;
-      });
-    }
-  }, [refreshUser]);
+    void refreshUser();
+  }, []);
 
   const value = useMemo(
     () => ({
