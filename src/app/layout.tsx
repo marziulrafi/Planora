@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/src/components/providers/auth-provider";
 import Navbar from "@/src/components/layout/navbar";
+import Footer from "@/src/components/layout/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Planora",
-  description: "Planora is a premium event operations platform for planning, launching, and scaling live product experiences.",
+  title: "Planora – Event Management Platform",
+  description:
+    "Plan, join, and manage events with complete workflow including invitations, payments, and reviews.",
 };
 
 export default function RootLayout({
@@ -26,10 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full bg-background font-sans text-slate-950">
+      <body className="flex min-h-full flex-col bg-slate-50 font-sans text-slate-950">
         <AuthProvider>
           <Navbar />
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
