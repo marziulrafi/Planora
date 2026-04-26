@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/src/components/providers/auth-provider";
 import Navbar from "@/src/components/layout/navbar";
 import Footer from "@/src/components/layout/footer";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Planora – Event Management Platform",
+  title: "Planora",
   description:
     "Plan, join, and manage events with complete workflow including invitations, payments, and reviews.",
 };
@@ -33,6 +34,7 @@ export default function RootLayout({
           <Navbar />
           <div className="flex-1">{children}</div>
           <Footer />
+          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         </AuthProvider>
       </body>
     </html>

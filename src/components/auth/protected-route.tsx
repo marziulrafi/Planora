@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/hooks/useAuth";
+import Spinner from "@/src/components/Spinner";
 
 type Props = {
   children: React.ReactNode;
@@ -24,7 +25,7 @@ export default function ProtectedRoute({ children, adminOnly = false }: Props) {
     }
   }, [loading, isAuthenticated, adminOnly, user?.role, router]);
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) return <Spinner centered />;
   if (!isAuthenticated) return null;
   if (adminOnly && user?.role !== "ADMIN") return null;
 

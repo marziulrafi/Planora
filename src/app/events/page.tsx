@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import api from "@/src/lib/api";
 import type { Event } from "@/src/lib/types";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 type PaginatedEvents = {
   data: Event[];
@@ -25,7 +27,6 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filterIdx, setFilterIdx] = useState(0);
@@ -43,17 +44,17 @@ export default function EventsPage() {
     const load = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         const params = new URLSearchParams({ limit: "12" });
         if (debouncedQuery) params.set("search", debouncedQuery);
         if (filter.type) params.set("type", filter.type);
+        if (filter.fee) params.set("fee", filter.fee);
 
         const result = await api.get<PaginatedEvents>(`/events?${params.toString()}`);
         setEvents(result.data);
         setTotal(result.total);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load events");
+        toast.error(err instanceof Error ? err.message : "Failed to load events");
       } finally {
         setLoading(false);
       }
@@ -98,18 +99,10 @@ export default function EventsPage() {
         ))}
       </div>
 
-      {error ? (
-        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
-
       {/* Event Grid */}
       {loading ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-36 animate-pulse rounded-xl bg-slate-100" />
-          ))}
+        <div className="mt-6">
+          <Spinner centered />
         </div>
       ) : events.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">No data found.</p>

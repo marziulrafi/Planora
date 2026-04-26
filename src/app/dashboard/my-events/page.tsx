@@ -9,6 +9,8 @@ import api, {
 } from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { Event, Participant } from "@/src/lib/types";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 const emptyForm = {
   title: "",
@@ -32,13 +34,10 @@ export default function MyEventsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const load = async () => {
     try {
       setLoading(true);
-      setError(null);
       const [owned, joined] = await Promise.all([
         api.get<Event[]>("/events/my"),
         api.get<Participant[]>("/participants/my-events"),
@@ -46,7 +45,7 @@ export default function MyEventsPage() {
       setMyEvents(owned);
       setJoinedEvents(joined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load events");
+      toast.error(err instanceof Error ? err.message : "Failed to load events");
     } finally {
       setLoading(false);
     }
@@ -58,22 +57,27 @@ export default function MyEventsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
     try {
       const payload = { ...form, fee: Number(form.fee) };
       if (editingId) {
-        await apiPatch(`/events/${editingId}`, payload);
-        setSuccess("Event updated ✓");
+        await toast.promise(apiPatch(`/events/${editingId}`, payload), {
+          loading: "Updating event...",
+          success: "Event updated",
+          error: (err) =>
+            err instanceof Error ? err.message : "Failed to save event",
+        });
         setEditingId(null);
       } else {
-        await apiPost("/events", payload);
-        setSuccess("Event created ✓");
+        await toast.promise(apiPost("/events", payload), {
+          loading: "Creating event...",
+          success: "Event created",
+          error: (err) =>
+            err instanceof Error ? err.message : "Failed to save event",
+        });
       }
       setForm(emptyForm);
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save event");
+    } catch {
     }
   };
 
@@ -100,10 +104,14 @@ export default function MyEventsPage() {
   const removeEvent = async (eventId: string) => {
     if (!confirm("Delete this event? This cannot be undone.")) return;
     try {
-      await apiDelete(`/events/${eventId}`);
+      await toast.promise(apiDelete(`/events/${eventId}`), {
+        loading: "Deleting event...",
+        success: "Event deleted",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to delete event",
+      });
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+    } catch {
     }
   };
 
@@ -113,7 +121,7 @@ export default function MyEventsPage() {
       const list = await api.get<Participant[]>(`/participants/${eventId}`);
       setParticipants(list);
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to load participants"
       );
     }
@@ -124,28 +132,28 @@ export default function MyEventsPage() {
     userId: string,
     action: "approve" | "reject" | "ban"
   ) => {
+    const actionLabel: Record<"approve" | "reject" | "ban", string> = {
+      approve: "approved",
+      reject: "rejected",
+      ban: "banned",
+    };
     try {
-      await apiPatch(`/participants/${eventId}/participants/${userId}/${action}`);
+      await toast.promise(
+        apiPatch(`/participants/${eventId}/participants/${userId}/${action}`),
+        {
+          loading: "Updating participant...",
+          success: `Participant ${actionLabel[action]}`,
+          error: (err) => (err instanceof Error ? err.message : "Action failed"),
+        }
+      );
       await loadParticipants(eventId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+    } catch {
     }
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">My Events</h1>
-
-      {error ? (
-        <p className="rounded bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className="rounded bg-green-50 px-4 py-2 text-sm text-green-700">
-          {success}
-        </p>
-      ) : null}
 
       {/* Create / Edit Form */}
       <section className="rounded-xl border bg-white p-5">
@@ -240,7 +248,9 @@ export default function MyEventsPage() {
       <section className="rounded-xl border bg-white p-5">
         <h2 className="font-medium">Created Events ({myEvents.length})</h2>
         {loading ? (
-          <p className="mt-2 animate-pulse text-sm text-slate-400">Loading…</p>
+          <div className="mt-2">
+            <Spinner />
+          </div>
         ) : myEvents.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">
             You haven&apos;t created any events yet.
@@ -355,7 +365,9 @@ export default function MyEventsPage() {
       <section className="rounded-xl border bg-white p-5">
         <h2 className="font-medium">Joined Events ({joinedEvents.length})</h2>
         {loading ? (
-          <p className="mt-2 animate-pulse text-sm text-slate-400">Loading…</p>
+          <div className="mt-2">
+            <Spinner />
+          </div>
         ) : joinedEvents.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">
             You haven&apos;t joined any events yet.

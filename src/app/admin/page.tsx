@@ -5,6 +5,8 @@ import api from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { Event, User } from "@/src/lib/types";
 import ProtectedRoute from "@/src/components/auth/protected-route";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 type PaginatedUsers = { data: User[]; total: number; page: number; limit: number };
 type PaginatedEvents = { data: Event[]; total: number; page: number; limit: number };
@@ -20,14 +22,12 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"users" | "events">("users");
 
   const load = async () => {
     try {
       setLoading(true);
-      setError(null);
       const [usersRes, eventsRes, statsRes] = await Promise.all([
         api.get<PaginatedUsers>("/admin/users"),
         api.get<PaginatedEvents>("/admin/events"),
@@ -48,7 +48,7 @@ export default function AdminPage() {
 
       setStats(statsRes);
     } catch (err) {
-      setError(err.message || "Failed to load data");
+      toast.error(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -61,20 +61,28 @@ export default function AdminPage() {
   const deleteUser = async (userId: string) => {
     if (!confirm("Permanently delete this user and all their data?")) return;
     try {
-      await api.delete(`/admin/users/${userId}`);
+      await toast.promise(api.delete(`/admin/users/${userId}`), {
+        loading: "Deleting user...",
+        success: "User deleted",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to delete user",
+      });
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete user");
+    } catch {
     }
   };
 
   const deleteEvent = async (eventId: string) => {
     if (!confirm("Permanently delete this event?")) return;
     try {
-      await api.delete(`/admin/events/${eventId}`);
+      await toast.promise(api.delete(`/admin/events/${eventId}`), {
+        loading: "Deleting event...",
+        success: "Event deleted",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to delete event",
+      });
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+    } catch {
     }
   };
 
@@ -87,12 +95,6 @@ export default function AdminPage() {
             <p className="text-sm text-slate-500">Logged in as: {user?.email}</p>
           </div>
         </div>
-
-        {error ? (
-          <p className="rounded bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error}
-          </p>
-        ) : null}
 
         {/* Stats Cards */}
         {stats && (
@@ -143,10 +145,8 @@ export default function AdminPage() {
         </div>
 
         {loading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
-            ))}
+          <div className="py-4">
+            <Spinner centered />
           </div>
         ) : tab === "users" ? (
           <section className="rounded-xl border bg-white">

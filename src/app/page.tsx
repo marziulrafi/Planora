@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { CalendarPlus2, CreditCard, LayoutDashboard, UsersRound } from "lucide-react";
 import api from "@/src/lib/api";
 import type { Event } from "@/src/lib/types";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 type PaginatedEvents = { data: Event[]; total: number; page: number; limit: number };
 
@@ -14,7 +16,6 @@ export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [category, setCategory] = useState<"ALL" | "PUBLIC" | "PRIVATE">("ALL");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -27,7 +28,7 @@ export default function HomePage() {
         setFeatured(featuredEvent);
         setEvents(upcoming);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load homepage");
+        toast.error(err instanceof Error ? err.message : "Failed to load homepage");
       } finally {
         setLoading(false);
       }
@@ -37,9 +38,16 @@ export default function HomePage() {
 
   const filteredEvents = useMemo(
     () =>
-      category === "ALL"
+      (category === "ALL"
         ? events
-        : events.filter((e) => e.type === category),
+        : events.filter((e) => e.type === category)
+      )
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        )
+        .slice(0, 6),
     [events, category]
   );
 
@@ -93,9 +101,9 @@ export default function HomePage() {
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-semibold">Featured Event</h2>
         {loading ? (
-          <p className="mt-3 text-slate-500 animate-pulse">Loading…</p>
-        ) : error ? (
-          <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <div className="mt-3">
+            <Spinner />
+          </div>
         ) : featured ? (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -166,10 +174,8 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-lg bg-slate-100" />
-            ))}
+          <div className="mt-4">
+            <Spinner centered />
           </div>
         ) : (
           <div className="mt-4 grid gap-3 md:grid-cols-3">

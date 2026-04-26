@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { apiPost } from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,26 +15,22 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
-      setError(null);
-
-      
-      await apiPost(
-        "/auth/sign-in/email",
-        { email, password }
-      );
+      const signInPromise = apiPost("/auth/sign-in/email", { email, password });
+      await toast.promise(signInPromise, {
+        loading: "Signing in...",
+        success: "Login successful",
+        error: (err) =>
+          err instanceof Error ? err.message : "Invalid email or password",
+      });
 
       await refreshUser();
       router.push("/dashboard");
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Invalid email or password"
-      );
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -77,17 +75,12 @@ export default function LoginPage() {
           />
         </div>
 
-        {error ? (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-
         <button
           disabled={loading}
-          className="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-slate-700 hover:shadow-md active:scale-95 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-slate-700 hover:shadow-md active:scale-95 disabled:opacity-60"
         >
-          {loading ? "Signing in…" : "Sign In"}
+          {loading ? <Spinner size="sm" className="border-white/40 border-t-white" /> : null}
+          {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>
       <p className="mt-3 text-sm text-slate-600">

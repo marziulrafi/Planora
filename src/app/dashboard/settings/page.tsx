@@ -4,15 +4,14 @@ import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { apiPatch } from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(
-    null
-  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -25,16 +24,16 @@ export default function SettingsPage() {
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setMessage(null);
     try {
-      await apiPatch("/auth/profile", { name, phone });
-      await refreshUser();
-      setMessage({ text: "Profile updated successfully.", ok: true });
-    } catch (err) {
-      setMessage({
-        text: err instanceof Error ? err.message : "Failed to update profile",
-        ok: false,
+      const savePromise = apiPatch("/auth/profile", { name, phone });
+      await toast.promise(savePromise, {
+        loading: "Saving profile...",
+        success: "Profile updated successfully",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to update profile",
       });
+      await refreshUser();
+    } catch {
     } finally {
       setSaving(false);
     }
@@ -110,23 +109,12 @@ export default function SettingsPage() {
             />
           </div>
 
-          {message && (
-            <p
-              className={`rounded px-3 py-2 text-sm ${
-                message.ok
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
-              }`}
-            >
-              {message.text}
-            </p>
-          )}
-
           <button
             disabled={saving}
-            className="rounded-xl bg-slate-900 px-5 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-slate-700 hover:shadow-md active:scale-95 disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-sm text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-slate-700 hover:shadow-md active:scale-95 disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? <Spinner size="sm" className="border-white/40 border-t-white" /> : null}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
       </section>

@@ -3,14 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "@/src/lib/api";
 import type { Participant, Review } from "@/src/lib/types";
+import toast from "react-hot-toast";
+import Spinner from "@/src/components/Spinner";
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [joinedEvents, setJoinedEvents] = useState<Participant[]>([]);
   const [form, setForm] = useState({ eventId: "", rating: 5, comment: "" });
   const [editing, setEditing] = useState<{ id: string; comment: string; rating: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -23,7 +23,7 @@ export default function ReviewsPage() {
       setReviews(myReviews);
       setJoinedEvents(participants.filter((p) => p.status === "APPROVED"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load reviews");
+      toast.error(err instanceof Error ? err.message : "Failed to load reviews");
     } finally {
       setLoading(false);
     }
@@ -41,58 +41,57 @@ export default function ReviewsPage() {
 
   const createReview = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
     try {
-      await api.post("/reviews", { ...form, rating: Number(form.rating) });
+      await toast.promise(api.post("/reviews", { ...form, rating: Number(form.rating) }), {
+        loading: "Submitting review...",
+        success: "Review submitted",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to submit review",
+      });
       setForm({ eventId: "", rating: 5, comment: "" });
-      setSuccess("Review submitted ✓");
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit review");
+    } catch {
     }
   };
 
   const saveEdit = async () => {
     if (!editing) return;
-    setError(null);
     try {
-      await api.patch(`/reviews/${editing.id}`, {
-        rating: Number(editing.rating),
-        comment: editing.comment,
-      });
+      await toast.promise(
+        api.patch(`/reviews/${editing.id}`, {
+          rating: Number(editing.rating),
+          comment: editing.comment,
+        }),
+        {
+          loading: "Updating review...",
+          success: "Review updated",
+          error: (err) =>
+            err instanceof Error ? err.message : "Failed to update review",
+        }
+      );
       setEditing(null);
-      setSuccess("Review updated ✓");
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update review");
+    } catch {
     }
   };
 
   const deleteReview = async (reviewId: string) => {
     if (!confirm("Delete this review?")) return;
     try {
-      await api.delete(`/reviews/${reviewId}`);
+      await toast.promise(api.delete(`/reviews/${reviewId}`), {
+        loading: "Deleting review...",
+        success: "Review deleted",
+        error: (err) =>
+          err instanceof Error ? err.message : "Failed to delete review",
+      });
       await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete review");
+    } catch {
     }
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">My Reviews</h1>
-
-      {error ? (
-        <p className="rounded bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className="rounded bg-green-50 px-4 py-2 text-sm text-green-700">
-          {success}
-        </p>
-      ) : null}
 
       {/* Create Review Form */}
       {eligibleEvents.length > 0 && (
@@ -219,7 +218,9 @@ export default function ReviewsPage() {
           Submitted Reviews ({reviews.length})
         </h2>
         {loading ? (
-          <p className="mt-2 animate-pulse text-sm text-slate-400">Loading…</p>
+          <div className="mt-2">
+            <Spinner />
+          </div>
         ) : reviews.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">
             No reviews yet.{" "}
