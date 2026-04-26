@@ -14,7 +14,7 @@ const links = [
 export default function DashboardSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+    <aside className="space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto">
       {links.map((link) => (
         <Link
           key={link.href}

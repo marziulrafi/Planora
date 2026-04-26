@@ -33,6 +33,7 @@ export interface Participant {
   status: ParticipantStatus;
   userId: string;
   eventId: string;
+  joinedViaInvitation?: boolean;
   paidAt?: string | null;
   user?: User;
   event?: Event;
