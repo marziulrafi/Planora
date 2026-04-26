@@ -18,11 +18,9 @@ async function parseResponse<T>(
     let message = "Request failed";
     try {
       const text = await response.text();
-      // Detect HTML error pages (wrong URL / server HTML response)
       if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
         message = "API route not found or server returned HTML";
       } else {
-        // Try to parse JSON error message
         try {
           const json = JSON.parse(text);
           message = json.message || text || message;
@@ -31,7 +29,6 @@ async function parseResponse<T>(
         }
       }
     } catch {
-      // ignore body parse error
     }
 
     if (
@@ -51,7 +48,6 @@ async function parseResponse<T>(
   }
 
   const payload = await response.json();
-  // Unwrap { success: true, data: ... } envelope if present
   const normalized =
     payload && typeof payload === "object" && "data" in payload
       ? (payload as { data: unknown }).data
@@ -64,7 +60,6 @@ function toArray<T>(value: unknown): T[] {
   return [];
 }
 
-/** All requests use credentials: "include" so session cookies are sent automatically. No tokens. */
 function commonOptions(method: string, body?: unknown): RequestInit {
   const init: RequestInit = {
     method,

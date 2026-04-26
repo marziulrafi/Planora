@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await apiGet<User>("/auth/me", true);
+    const res = await apiGet<User>("/auth/me", true);
       setUser(res);
     } catch {
       setUser(null);
@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await apiPost("/auth/sign-out", {}, true);
     } catch {
+      
     } finally {
       setUser(null);
       window.location.href = "/login";
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void refreshUser();
+    
   }, []);
 
   const value = useMemo(

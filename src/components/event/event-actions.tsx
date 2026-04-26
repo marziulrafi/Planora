@@ -27,6 +27,7 @@ export default function EventActions({ event }: Props) {
   }, [user, isAuthenticated, event]);
 
   if (loading) return null;
+
   if (isAuthenticated && user?.id === event.ownerId) {
     return (
       <div className="mt-4">

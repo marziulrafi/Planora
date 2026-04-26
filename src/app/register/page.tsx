@@ -22,17 +22,12 @@ export default function RegisterPage() {
       setLoading(true);
       setError(null);
 
-      /**
-       * Use Better Auth native sign-up endpoint.
-       * Server creates user + session and sets cookie automatically.
-       */
       await apiPost(
         "/auth/sign-up/email",
         { name, email, password },
-        true // skip 401 redirect on this call
+        true
       );
 
-      // Refresh user state from session cookie
       await refreshUser();
       router.push("/dashboard");
     } catch (err) {

@@ -21,17 +21,13 @@ export default function LoginPage() {
       setLoading(true);
       setError(null);
 
-      /**
-       * Use Better Auth native sign-in endpoint.
-       * Server sets session cookie automatically — no token storage needed.
-       */
+      
       await apiPost(
         "/auth/sign-in/email",
         { email, password },
-        true // skip 401 redirect on this call
+        true
       );
 
-      // Refresh user state from session cookie
       await refreshUser();
       router.push("/dashboard");
     } catch (err) {
