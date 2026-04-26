@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { apiDelete, apiGetArray, apiPatch, apiPost } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import type { Participant, Review } from "@/src/lib/types";
 
 export default function ReviewsPage() {
@@ -17,8 +17,8 @@ export default function ReviewsPage() {
     try {
       setLoading(true);
       const [myReviews, participants] = await Promise.all([
-        apiGetArray<Review>("/reviews/my"),
-        apiGetArray<Participant>("/participants/my-events"),
+        api.get<Review[]>("/reviews/my"),
+        api.get<Participant[]>("/participants/my-events"),
       ]);
       setReviews(myReviews);
       setJoinedEvents(participants.filter((p) => p.status === "APPROVED"));
@@ -44,12 +44,12 @@ export default function ReviewsPage() {
     setError(null);
     setSuccess(null);
     try {
-      await apiPost("/reviews", { ...form, rating: Number(form.rating) });
+      await api.post("/reviews", { ...form, rating: Number(form.rating) });
       setForm({ eventId: "", rating: 5, comment: "" });
       setSuccess("Review submitted ✓");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create review");
+      setError(err instanceof Error ? err.message : "Failed to submit review");
     }
   };
 
@@ -57,7 +57,7 @@ export default function ReviewsPage() {
     if (!editing) return;
     setError(null);
     try {
-      await apiPatch(`/reviews/${editing.id}`, {
+      await api.patch(`/reviews/${editing.id}`, {
         rating: Number(editing.rating),
         comment: editing.comment,
       });
@@ -72,7 +72,7 @@ export default function ReviewsPage() {
   const deleteReview = async (reviewId: string) => {
     if (!confirm("Delete this review?")) return;
     try {
-      await apiDelete(`/reviews/${reviewId}`);
+      await api.delete(`/reviews/${reviewId}`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete review");

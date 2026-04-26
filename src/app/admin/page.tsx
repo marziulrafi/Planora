@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiGetArray, apiDelete } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { Event, User } from "@/src/lib/types";
 import ProtectedRoute from "@/src/components/auth/protected-route";
@@ -29,39 +29,39 @@ export default function AdminPage() {
       setLoading(true);
       setError(null);
       const [usersRes, eventsRes, statsRes] = await Promise.all([
-        apiGet<PaginatedUsers>("/admin/users"),
-        apiGet<PaginatedEvents>("/admin/events"),
-        apiGet<Stats>("/admin/stats"),
+        api.get<PaginatedUsers>("/admin/users"),
+        api.get<PaginatedEvents>("/admin/events"),
+        api.get<Stats>("/admin/stats"),
       ]);
 
-      if (usersRes && Array.isArray((usersRes as any).data)) {
-        setUsers((usersRes as any).data);
+      if (usersRes && Array.isArray(usersRes.data)) {
+        setUsers(usersRes.data);
       } else if (Array.isArray(usersRes)) {
-        setUsers(usersRes as any);
+        setUsers(usersRes);
       }
 
-      if (eventsRes && Array.isArray((eventsRes as any).data)) {
-        setEvents((eventsRes as any).data);
+      if (eventsRes && Array.isArray(eventsRes.data)) {
+        setEvents(eventsRes.data);
       } else if (Array.isArray(eventsRes)) {
-        setEvents(eventsRes as any);
+        setEvents(eventsRes);
       }
 
-      setStats(statsRes as any);
+      setStats(statsRes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load admin data");
+      setError(err.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void load();
+    load();
   }, []);
 
   const deleteUser = async (userId: string) => {
     if (!confirm("Permanently delete this user and all their data?")) return;
     try {
-      await apiDelete(`/admin/users/${userId}`);
+      await api.delete(`/admin/users/${userId}`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete user");
@@ -71,7 +71,7 @@ export default function AdminPage() {
   const deleteEvent = async (eventId: string) => {
     if (!confirm("Permanently delete this event?")) return;
     try {
-      await apiDelete(`/admin/events/${eventId}`);
+      await api.delete(`/admin/events/${eventId}`);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete event");

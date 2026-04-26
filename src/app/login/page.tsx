@@ -24,8 +24,7 @@ export default function LoginPage() {
       
       await apiPost(
         "/auth/sign-in/email",
-        { email, password },
-        true
+        { email, password }
       );
 
       await refreshUser();

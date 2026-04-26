@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CalendarPlus2, CreditCard, LayoutDashboard, UsersRound } from "lucide-react";
-import { apiGet, apiGetArray } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import type { Event } from "@/src/lib/types";
 
 type PaginatedEvents = { data: Event[]; total: number; page: number; limit: number };
@@ -21,8 +21,8 @@ export default function HomePage() {
       try {
         setLoading(true);
         const [featuredEvent, upcoming] = await Promise.all([
-          apiGet<Event | null>("/events/featured", true),
-          apiGetArray<Event>("/events/upcoming", true),
+          api.get<Event | null>("/events/featured"),
+          api.get<Event[]>("/events/upcoming"),
         ]);
         setFeatured(featuredEvent);
         setEvents(upcoming);

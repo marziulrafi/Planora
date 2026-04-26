@@ -1,10 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import {
+import api, {
   apiDelete,
   apiGet,
-  apiGetArray,
   apiPatch,
   apiPost,
 } from "@/src/lib/api";
@@ -41,8 +40,8 @@ export default function MyEventsPage() {
       setLoading(true);
       setError(null);
       const [owned, joined] = await Promise.all([
-        apiGetArray<Event>("/events/my"),
-        apiGetArray<Participant>("/participants/my-events"),
+        api.get<Event[]>("/events/my"),
+        api.get<Participant[]>("/participants/my-events"),
       ]);
       setMyEvents(owned);
       setJoinedEvents(joined);
@@ -111,7 +110,7 @@ export default function MyEventsPage() {
   const loadParticipants = async (eventId: string) => {
     setSelectedEventId(eventId);
     try {
-      const list = await apiGetArray<Participant>(`/participants/${eventId}`);
+      const list = await api.get<Participant[]>(`/participants/${eventId}`);
       setParticipants(list);
     } catch (err) {
       setError(

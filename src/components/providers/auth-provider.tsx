@@ -8,7 +8,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { apiGet, apiPost } from "@/src/lib/api";
+import { usePathname, useRouter } from "next/navigation";
+import api from "@/src/lib/api";
 import type { User } from "@/src/lib/types";
 
 type AuthContextValue = {
@@ -21,14 +22,18 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const PUBLIC_PATHS = ["/login", "/register", "/"];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const refreshUser = useCallback(async () => {
     try {
       setLoading(true);
-    const res = await apiGet<User>("/auth/me", true);
+      const res = await api.get<User>("/auth/me");
       setUser(res);
     } catch {
       setUser(null);
@@ -39,19 +44,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiPost("/auth/sign-out", {}, true);
+      await api.post("/auth/sign-out", {});
     } catch {
-      
     } finally {
       setUser(null);
-      window.location.href = "/login";
+      router.push("/login");
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
-    void refreshUser();
+    const isPublicPage = PUBLIC_PATHS.some(path => 
+      pathname === path || pathname.startsWith("/events/")
+    );
     
-  }, []);
+    if (isPublicPage) {
+      setLoading(false);
+      return;
+    }
+
+    void refreshUser();
+  }, [pathname, refreshUser]);
 
   const value = useMemo(
     () => ({

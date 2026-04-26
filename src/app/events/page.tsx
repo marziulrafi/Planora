@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { apiGet } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import type { Event } from "@/src/lib/types";
 
 type PaginatedEvents = {
@@ -48,24 +48,12 @@ export default function EventsPage() {
         const params = new URLSearchParams({ limit: "12" });
         if (debouncedQuery) params.set("search", debouncedQuery);
         if (filter.type) params.set("type", filter.type);
-        if (filter.fee) params.set("fee", filter.fee);
 
-        const result = await apiGet<PaginatedEvents>(
-          `/events?${params.toString()}`,
-          true
-        );
-
-        if (result && typeof result === "object" && Array.isArray((result as any).data)) {
-          setEvents((result as any).data as Event[]);
-          setTotal((result as any).total ?? 0);
-        } else if (Array.isArray(result)) {
-          setEvents(result as any);
-          setTotal((result as any[]).length);
-        } else {
-          setEvents([]);
-        }
+        const result = await api.get<PaginatedEvents>(`/events?${params.toString()}`);
+        setEvents(result.data);
+        setTotal(result.total);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch events");
+        setError(err instanceof Error ? err.message : "Failed to load events");
       } finally {
         setLoading(false);
       }

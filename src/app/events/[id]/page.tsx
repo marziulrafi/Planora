@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import EventActions from "@/src/components/event/event-actions";
+import { apiGet } from "@/src/lib/api";
 import type { Event, Participant, Review } from "@/src/lib/types";
 
 
@@ -17,19 +18,9 @@ interface FullEvent extends Event {
 export default async function EventDetailsPage({ params }: EventPageProps) {
   const { id } = await Promise.resolve(params);
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
   let event: FullEvent | null = null;
   try {
-    const res = await fetch(`${baseUrl}/events/${id}`, {
-      cache: "no-store",
-    });
-
-    if (!res.ok) notFound();
-
-    const payload = await res.json();
-    event = (payload?.data ?? payload) as FullEvent;
+    event = await apiGet<FullEvent>(`/events/${id}`);
   } catch {
     notFound();
   }

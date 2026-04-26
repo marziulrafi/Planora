@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { apiPost } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 
 export default function RegisterPage() {
@@ -22,11 +22,7 @@ export default function RegisterPage() {
       setLoading(true);
       setError(null);
 
-      await apiPost(
-        "/auth/sign-up/email",
-        { name, email, password },
-        true
-      );
+      await api.post("/auth/sign-up/email", { name, email, password });
 
       await refreshUser();
       router.push("/dashboard");
