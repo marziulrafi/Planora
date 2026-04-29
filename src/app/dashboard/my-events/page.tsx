@@ -101,6 +101,163 @@ export default function MyEventsPage() {
         </button>
       </div>
 
+      {/* Create event form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.section
+            key="create-form"
+            initial={{ opacity: 0, height: 0, y: -8 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+          >
+            <div className="p-5">
+              <h2 className="mb-5 font-semibold text-slate-900">Create New Event</h2>
+
+              <form
+                className="space-y-4"
+                onSubmit={(e) => void createEvent(e)}
+              >
+                {/* Title */}
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 }}
+                >
+                  <label className={labelClass}>Title *</label>
+                  <input
+                    className={inputClass}
+                    placeholder="e.g. Next.js Meetup Dhaka"
+                    value={form.title}
+                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                    required
+                  />
+                </motion.div>
+
+                {/* Description */}
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.08 }}
+                >
+                  <label className={labelClass}>Description *</label>
+                  <textarea
+                    className={`${inputClass} resize-none`}
+                    rows={3}
+                    placeholder="What is this event about?"
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    required
+                  />
+                </motion.div>
+
+                {/* Date + Time */}
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.11 }}
+                  className="grid gap-4 sm:grid-cols-2"
+                >
+                  <div>
+                    <label className={labelClass}>Date *</label>
+                    <input
+                      type="date"
+                      className={inputClass}
+                      min={new Date().toISOString().split("T")[0]}
+                      value={form.date}
+                      onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Time *</label>
+                    <input
+                      type="time"
+                      className={inputClass}
+                      value={form.time}
+                      onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Venue */}
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.14 }}
+                >
+                  <label className={labelClass}>Venue</label>
+                  <input
+                    className={inputClass}
+                    placeholder="e.g. BRAC University, Dhaka"
+                    value={form.venue}
+                    onChange={(e) => setForm((p) => ({ ...p, venue: e.target.value }))}
+                  />
+                </motion.div>
+
+                {/* Type + Fee */}
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.17 }}
+                  className="grid gap-4 sm:grid-cols-2"
+                >
+                  <div>
+                    <label className={labelClass}>Type *</label>
+                    <select
+                      className={inputClass}
+                      value={form.type}
+                      onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as "PUBLIC" | "PRIVATE" }))}
+                    >
+                      <option value="PUBLIC">Public</option>
+                      <option value="PRIVATE">Private</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>
+                      Fee (BDT)
+                      <span className="ml-1 font-normal text-slate-400">— 0 for free</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      className={inputClass}
+                      placeholder="0"
+                      value={form.fee}
+                      onChange={(e) => setForm((p) => ({ ...p, fee: e.target.value }))}
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Actions */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex items-center gap-3 pt-1"
+                >
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:scale-105 hover:bg-slate-700 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {creating ? "Creating..." : "Create Event"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowForm(false)}
+                    className="rounded-xl border border-gray-200 px-6 py-2.5 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-gray-50 active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                </motion.div>
+              </form>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
 
       {/* Created events */}
       <motion.section
