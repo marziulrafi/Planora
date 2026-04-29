@@ -7,7 +7,7 @@ import type { Event, Participant, Review } from "@/src/lib/types";
 
 
 interface EventPageProps {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 interface FullEvent extends Event {
@@ -17,7 +17,7 @@ interface FullEvent extends Event {
 }
 
 export default async function EventDetailsPage({ params }: EventPageProps) {
-  const { id } = await Promise.resolve(params);
+  const { id } = await params;
 
   let event: FullEvent | null = null;
   try {

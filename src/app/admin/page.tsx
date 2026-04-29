@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/src/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
+import api, { ensureSession } from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { Event, User } from "@/src/lib/types";
 import ProtectedRoute from "@/src/components/auth/protected-route";
@@ -17,6 +18,55 @@ type Stats = {
   totalPayments: number;
 };
 
+interface ConfirmDialogProps {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  danger?: boolean;
+  confirmLabel?: string;
+}
+
+function ConfirmDialog({ message, onConfirm, onCancel, danger = true, confirmLabel = "Delete" }: ConfirmDialogProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0, y: 12 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.92, opacity: 0, y: 12 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-sm font-medium text-slate-900 leading-relaxed">{message}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-medium text-slate-700 transition hover:bg-gray-50 active:scale-95"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`rounded-xl px-4 py-2 text-xs font-medium text-white transition active:scale-95 ${danger
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-slate-900 hover:bg-slate-700"
+              }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function AdminPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -25,27 +75,45 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"users" | "events">("users");
 
+  const [confirm, setConfirm] = useState<{
+    message: string;
+    confirmLabel: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const showConfirm = (message: string, confirmLabel: string) =>
+    new Promise<boolean>((resolve) => {
+      setConfirm({
+        message,
+        confirmLabel,
+        onConfirm: () => { setConfirm(null); resolve(true); },
+      });
+    });
+
+  const handleConfirmCancel = () => {
+    setConfirm(null);
+  };
+
   const load = async () => {
     try {
       setLoading(true);
+      await ensureSession();
       const [usersRes, eventsRes, statsRes] = await Promise.all([
         api.get<PaginatedUsers>("/admin/users"),
         api.get<PaginatedEvents>("/admin/events"),
         api.get<Stats>("/admin/stats"),
       ]);
 
-      if (usersRes && Array.isArray(usersRes.data)) {
-        setUsers(usersRes.data);
-      } else if (Array.isArray(usersRes)) {
-        setUsers(usersRes);
-      }
-
-      if (eventsRes && Array.isArray(eventsRes.data)) {
-        setEvents(eventsRes.data);
-      } else if (Array.isArray(eventsRes)) {
-        setEvents(eventsRes);
-      }
-
+      setUsers(
+        Array.isArray(usersRes)
+          ? usersRes
+          : Array.isArray(usersRes?.data) ? usersRes.data : []
+      );
+      setEvents(
+        Array.isArray(eventsRes)
+          ? eventsRes
+          : Array.isArray(eventsRes?.data) ? eventsRes.data : []
+      );
       setStats(statsRes);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load data");
@@ -54,160 +122,200 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { void load(); }, []);
 
   const deleteUser = async (userId: string) => {
-    if (!confirm("Permanently delete this user and all their data?")) return;
+    const confirmed = await showConfirm(
+      "Permanently delete this user and all their data? This cannot be undone.",
+      "Delete user"
+    );
+    if (!confirmed) return;
     try {
       await toast.promise(api.delete(`/admin/users/${userId}`), {
         loading: "Deleting user...",
-        success: "User deleted",
-        error: (err) =>
-          err instanceof Error ? err.message : "Failed to delete user",
+        success: "User deleted successfully",
+        error: (err) => err instanceof Error ? err.message : "Failed to delete user",
       });
       await load();
-    } catch {
-    }
+    } catch { }
   };
 
   const deleteEvent = async (eventId: string) => {
-    if (!confirm("Permanently delete this event?")) return;
+    const confirmed = await showConfirm(
+      "Permanently delete this event? All participants and reviews will be removed.",
+      "Delete event"
+    );
+    if (!confirmed) return;
     try {
       await toast.promise(api.delete(`/admin/events/${eventId}`), {
         loading: "Deleting event...",
         success: "Event deleted",
-        error: (err) =>
-          err instanceof Error ? err.message : "Failed to delete event",
+        error: (err) => err instanceof Error ? err.message : "Failed to delete event",
       });
       await load();
-    } catch {
-    }
+    } catch { }
   };
+
+  const STAT_CARDS = stats ? [
+    { label: "Total Users", value: stats.totalUsers, color: "bg-blue-50   text-blue-700" },
+    { label: "Total Events", value: stats.totalEvents, color: "bg-green-50  text-green-700" },
+    { label: "Successful Payments", value: stats.totalPayments, color: "bg-purple-50 text-purple-700" },
+    { label: "Total Revenue", value: `BDT ${stats.totalRevenue.toLocaleString()}`, color: "bg-amber-50  text-amber-700" },
+  ] : [];
 
   return (
     <ProtectedRoute adminOnly>
+      {/* Confirm dialog portal */}
+      <AnimatePresence>
+        {confirm && (
+          <ConfirmDialog
+            message={confirm.message}
+            confirmLabel={confirm.confirmLabel}
+            onConfirm={confirm.onConfirm}
+            onCancel={handleConfirmCancel}
+          />
+        )}
+      </AnimatePresence>
+
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-        <div className="flex items-center justify-between">
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center justify-between"
+        >
           <div>
             <h1 className="text-2xl font-bold">Admin Panel</h1>
             <p className="text-sm text-slate-500">Logged in as: {user?.email}</p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: "Total Users", value: stats.totalUsers, color: "bg-blue-50 text-blue-700" },
-              { label: "Total Events", value: stats.totalEvents, color: "bg-green-50 text-green-700" },
-              { label: "Successful Payments", value: stats.totalPayments, color: "bg-purple-50 text-purple-700" },
-              {
-                label: "Total Revenue",
-                value: `BDT ${stats.totalRevenue.toLocaleString()}`,
-                color: "bg-amber-50 text-amber-700",
-              },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className={`rounded-xl p-5 ${stat.color}`}
-              >
-                <p className="text-sm font-medium opacity-80">{stat.label}</p>
-                <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Stats */}
+        <AnimatePresence>
+          {stats && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.05 }}
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              {STAT_CARDS.map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 + i * 0.06 }}
+                  className={`rounded-xl p-5 ${stat.color}`}
+                >
+                  <p className="text-sm font-medium opacity-80">{stat.label}</p>
+                  <p className="mt-1 text-2xl font-bold">{stat.value}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Tab switcher */}
+        {/* Tabs */}
         <div className="flex gap-2 border-b">
-          <button
-            onClick={() => setTab("users")}
-            className={`px-4 py-2 text-sm font-medium ${
-              tab === "users"
-                ? "border-b-2 border-slate-900 text-slate-900"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            Users ({users.length})
-          </button>
-          <button
-            onClick={() => setTab("events")}
-            className={`px-4 py-2 text-sm font-medium ${
-              tab === "events"
-                ? "border-b-2 border-slate-900 text-slate-900"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            Events ({events.length})
-          </button>
+          {(["users", "events"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`relative px-4 py-2 text-sm font-medium capitalize transition-colors ${tab === t ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              {t} ({t === "users" ? users.length : events.length})
+              {tab === t && (
+                <motion.div
+                  layoutId="admin-tab-indicator"
+                  className="absolute inset-x-0 -bottom-px h-0.5 bg-slate-900 rounded-full"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
         </div>
 
+        {/* Content */}
         {loading ? (
-          <div className="py-4">
+          <div className="py-8">
             <Spinner centered />
           </div>
-        ) : tab === "users" ? (
-          <section className="rounded-xl border bg-white">
-            <div className="divide-y">
-              {users.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-500">No users.</p>
-              ) : (
-                users.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center gap-3 px-4 py-3"
-                  >
-                    <div className="mr-auto">
-                      <p className="font-medium text-sm">{u.name}</p>
-                      <p className="text-xs text-slate-500">
-                        {u.email} · {u.role}
-                      </p>
-                    </div>
-                    {u.role !== "ADMIN" && (
-                      <button
-                        className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
-                        onClick={() => void deleteUser(u.id)}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
         ) : (
-          <section className="rounded-xl border bg-white">
-            <div className="divide-y">
-              {events.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-500">No events.</p>
-              ) : (
-                events.map((ev) => (
-                  <div
-                    key={ev.id}
-                    className="flex items-center gap-3 px-4 py-3"
-                  >
-                    <div className="mr-auto">
-                      <p className="font-medium text-sm">{ev.title}</p>
-                      <p className="text-xs text-slate-500">
-                        {new Date(ev.date).toLocaleDateString()} ·{" "}
-                        {ev.fee > 0 ? `BDT ${ev.fee}` : "Free"} · {ev.type} ·{" "}
-                        Owner: {(ev as any).owner?.name ?? ev.ownerId}
-                      </p>
-                    </div>
-                    <button
-                      className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
-                      onClick={() => void deleteEvent(ev.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
+          <AnimatePresence mode="wait">
+            <motion.section
+              key={tab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              className="rounded-xl border bg-white"
+            >
+              <div className="divide-y">
+                {tab === "users" ? (
+                  users.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-slate-500">No users.</p>
+                  ) : (
+                    users.map((u, i) => (
+                      <motion.div
+                        key={u.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: i * 0.03 }}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <div className="mr-auto">
+                          <p className="text-sm font-medium">{u.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {u.email} · {u.role}
+                          </p>
+                        </div>
+                        {u.role !== "ADMIN" && (
+                          <button
+                            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 active:scale-95"
+                            onClick={() => void deleteUser(u.id)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </motion.div>
+                    ))
+                  )
+                ) : (
+                  events.length === 0 ? (
+                    <p className="px-4 py-6 text-center text-sm text-slate-500">No events.</p>
+                  ) : (
+                    events.map((ev, i) => (
+                      <motion.div
+                        key={ev.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2, delay: i * 0.03 }}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <div className="mr-auto">
+                          <p className="text-sm font-medium">{ev.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {new Date(ev.date).toLocaleDateString()} ·{" "}
+                            {ev.fee > 0 ? `BDT ${ev.fee}` : "Free"} · {ev.type} ·{" "}
+                            Owner: {ev.owner?.name ?? ev.ownerId}
+                          </p>
+                        </div>
+                        <button
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700 active:scale-95"
+                          onClick={() => void deleteEvent(ev.id)}
+                        >
+                          Delete
+                        </button>
+                      </motion.div>
+                    ))
+                  )
+                )}
+              </div>
+            </motion.section>
+          </AnimatePresence>
         )}
       </main>
     </ProtectedRoute>

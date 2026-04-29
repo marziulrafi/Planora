@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import api from "@/src/lib/api";
+import api, { ensureSession } from "@/src/lib/api";
 import type { Invitation } from "@/src/lib/types";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
@@ -15,6 +15,7 @@ export default function InvitationsPage() {
   const load = async () => {
     try {
       setLoading(true);
+      await ensureSession();
       const response = await api.get<Invitation[]>("/invitations/my");
       setInvitations(response);
     } catch (err) {
