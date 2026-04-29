@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { apiPatch } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
@@ -25,7 +25,7 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const savePromise = apiPatch("/auth/profile", { name, phone });
+      const savePromise = api.patch("/account/profile", { name, phone });
       await toast.promise(savePromise, {
         loading: "Saving profile...",
         success: "Profile updated successfully",

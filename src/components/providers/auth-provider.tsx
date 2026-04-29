@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import type { User } from "@/src/lib/types";
 
@@ -22,25 +22,32 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const PUBLIC_PATHS = ["/login", "/register", "/"];
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
   const router = useRouter();
+
+  const getSessionUser = useCallback(async () => {
+    try {
+      const sessionRes = await api.get<{ user: User | null }>("/auth/session");
+      return sessionRes?.user ?? null;
+    } catch {
+      const fallbackRes = await api.get<{ user: User | null }>("/auth/get-session");
+      return fallbackRes?.user ?? null;
+    }
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get<User>("/auth/me");
-      setUser(res);
+      const sessionUser = await getSessionUser();
+      setUser(sessionUser);
     } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getSessionUser]);
 
   const logout = useCallback(async () => {
     try {
@@ -53,17 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    const isPublicPage = PUBLIC_PATHS.some(path => 
-      pathname === path || pathname.startsWith("/events/")
-    );
-    
-    if (isPublicPage) {
-      setLoading(false);
-      return;
-    }
-
-    void refreshUser();
-  }, [pathname, refreshUser]);
+    getSessionUser()
+      .then((sessionUser) => setUser(sessionUser))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, [getSessionUser]);
 
   const value = useMemo(
     () => ({

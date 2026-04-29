@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 
 import { useEffect, useState } from "react";
-import { apiGet } from "@/src/lib/api";
+import api from "@/src/lib/api";
 
 function SuccessContent() {
   const params = useSearchParams();
@@ -24,7 +24,7 @@ function SuccessContent() {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiGet<any>(`/payment/verify?tran_id=${encodeURIComponent(tranId)}`);
+        const data = await api.get<any>(`/payment/verify?tran_id=${encodeURIComponent(tranId)}`);
         if (!data || data.status !== "SUCCESS") {
           throw new Error("Payment is not completed yet.");
         }

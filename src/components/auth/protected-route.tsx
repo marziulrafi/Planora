@@ -12,7 +12,8 @@ type Props = {
 
 export default function ProtectedRoute({ children, adminOnly = false }: Props) {
   const router = useRouter();
-  const { loading, isAuthenticated, user } = useAuth();
+  const { loading, user } = useAuth();
+  const isAuthenticated = Boolean(user);
 
   useEffect(() => {
     if (loading) return;

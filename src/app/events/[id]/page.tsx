@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import EventActions from "@/src/components/event/event-actions";
 import EventOwnerPanel from "@/src/components/event/event-owner-panel";
-import { apiGet } from "@/src/lib/api";
+import api from "@/src/lib/api";
 import type { Event, Participant, Review } from "@/src/lib/types";
 
 
@@ -21,7 +21,7 @@ export default async function EventDetailsPage({ params }: EventPageProps) {
 
   let event: FullEvent | null = null;
   try {
-    event = await apiGet<FullEvent>(`/events/${id}`);
+    event = await api.get<FullEvent>(`/events/${id}`);
   } catch {
     notFound();
   }
@@ -122,7 +122,7 @@ export default async function EventDetailsPage({ params }: EventPageProps) {
           <p className="mt-2 text-sm text-slate-600">
             Secure your spot and manage participation from your dashboard.
           </p>
-          {/* Action buttons — client component */}
+          {/* Action buttons */}
           <EventActions event={event} />
         </aside>
       </section>

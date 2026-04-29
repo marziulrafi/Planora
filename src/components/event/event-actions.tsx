@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import { useAuth } from "@/src/hooks/useAuth";
 import type { Event, Participant } from "@/src/lib/types";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function EventActions({ event }: Props) {
+  const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
   const [busy, setBusy] = useState(false);
   const [participantStatus, setParticipantStatus] = useState<string | null>(null);

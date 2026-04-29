@@ -4,14 +4,12 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { apiPost } from "@/src/lib/api";
-import { useAuth } from "@/src/hooks/useAuth";
+import { signIn } from "@/src/lib/auth-client";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,17 +18,19 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      const signInPromise = apiPost("/auth/sign-in/email", { email, password });
-      await toast.promise(signInPromise, {
-        loading: "Signing in...",
-        success: "Login successful",
-        error: (err) =>
-          err instanceof Error ? err.message : "Invalid email or password",
+      const { error } = await signIn.email({
+        email,
+        password,
+        callbackURL: "/dashboard",
       });
 
-      await refreshUser();
+      if (error) throw new Error(error.message);
+
+      toast.success("Login successful");
       router.push("/dashboard");
-    } catch {
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { apiGet } from "@/src/lib/api";
+import api from "@/src/lib/api";
 
-export default function PaymentFailPage() {
+function FailContent() {
   const params = useSearchParams();
   const tranId = params.get("tran_id");
   const [eventId, setEventId] = useState<string | null>(null);
@@ -13,7 +14,7 @@ export default function PaymentFailPage() {
     const fetchEvent = async () => {
       if (!tranId) return;
       try {
-        const payment = await apiGet<any>(`/payment/verify?tran_id=${encodeURIComponent(tranId)}`);
+        const payment = await api.get<any>(`/payment/verify?tran_id=${encodeURIComponent(tranId)}`);
         setEventId(payment?.event?.id || null);
       } catch {
         setEventId(null);
@@ -33,5 +34,19 @@ export default function PaymentFailPage() {
         Back to Event
       </Link>
     </main>
+  );
+}
+
+export default function PaymentFailPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-lg px-4 py-16 text-center">
+          <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
+        </main>
+      }
+    >
+      <FailContent />
+    </Suspense>
   );
 }

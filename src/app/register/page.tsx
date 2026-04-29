@@ -4,14 +4,12 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import api from "@/src/lib/api";
-import { useAuth } from "@/src/hooks/useAuth";
+import { signUp } from "@/src/lib/auth-client";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,21 +19,14 @@ export default function RegisterPage() {
     e.preventDefault();
     try {
       setLoading(true);
-      const registerPromise = api.post("/auth/sign-up/email", {
-        name,
-        email,
-        password,
-      });
-      await toast.promise(registerPromise, {
-        loading: "Creating account...",
-        success: "Account created successfully",
-        error: (err) =>
-          err instanceof Error ? err.message : "Registration failed",
-      });
+      const { error } = await signUp.email({ name, email, password });
+      if (error) throw new Error(error.message);
 
-      await refreshUser();
-      router.push("/dashboard");
-    } catch {
+      toast.success("Account created! Please login.");
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
