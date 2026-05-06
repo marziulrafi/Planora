@@ -1,18 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { signIn } from "@/src/lib/auth-client";
+import { useSession } from "@/src/lib/auth-client";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      router.push("/dashboard");
+    }
+  }, [session, isPending, router]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();

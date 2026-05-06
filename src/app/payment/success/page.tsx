@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-
-
 import { useEffect, useState } from "react";
 import api from "@/src/lib/api";
 

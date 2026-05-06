@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { isAuthenticated } = useAuth();
 
   return (
     <footer className="mt-16 border-t bg-white">
@@ -23,14 +27,14 @@ export default function Footer() {
             </p>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
               <li>
-                <Link href="/" className="hover:text-slate-900 hover:underline">
+                <Link href="/" className="hover:text-slate-900">
                   Home
                 </Link>
               </li>
               <li>
                 <Link
                   href="/events"
-                  className="hover:text-slate-900 hover:underline"
+                  className="hover:text-slate-900"
                 >
                   Events
                 </Link>
@@ -38,19 +42,21 @@ export default function Footer() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="hover:text-slate-900 hover:underline"
+                  className="hover:text-slate-900"
                 >
                   Dashboard
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/login"
-                  className="hover:text-slate-900 hover:underline"
-                >
-                  Login
-                </Link>
-              </li>
+              {!isAuthenticated && (
+                <li>
+                  <Link
+                    href="/login"
+                    className="hover:text-slate-900"
+                  >
+                    Login
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -60,38 +66,45 @@ export default function Footer() {
               Account
             </p>
             <ul className="mt-3 space-y-2 text-sm text-slate-500">
-              <li>
-                <Link
-                  href="/register"
-                  className="hover:text-slate-900 hover:underline"
-                >
-                  Register
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/settings"
-                  className="hover:text-slate-900 hover:underline"
-                >
-                  Profile Settings
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/invitations"
-                  className="hover:text-slate-900 hover:underline"
-                >
-                  Invitations
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard/reviews"
-                  className="hover:text-slate-900 hover:underline"
-                >
-                  My Reviews
-                </Link>
-              </li>
+              {!isAuthenticated ? (
+                <>
+                  <li>
+                    <Link
+                      href="/register"
+                      className="hover:text-slate-900 "
+                    >
+                      Register
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link
+                      href="/dashboard/settings"
+                      className="hover:text-slate-900 "
+                    >
+                      Profile Settings
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/dashboard/invitations"
+                      className="hover:text-slate-900 "
+                    >
+                      Invitations
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/dashboard/reviews"
+                      className="hover:text-slate-900 "
+                    >
+                      My Reviews
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>

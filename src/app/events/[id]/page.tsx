@@ -40,7 +40,7 @@ export default async function EventDetailsPage({ params }: EventPageProps) {
     <main className="mx-auto max-w-6xl px-6 py-16">
       <Link
         href="/events"
-        className="text-sm text-slate-500 hover:underline"
+        className="text-sm text-slate-500"
       >
         ← Back to Events
       </Link>

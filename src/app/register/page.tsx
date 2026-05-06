@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { signUp } from "@/src/lib/auth-client";
+import { useSession } from "@/src/lib/auth-client";
 import toast from "react-hot-toast";
 import Spinner from "@/src/components/Spinner";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { data: session, isPending } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      router.push("/dashboard");
+    }
+  }, [session, isPending, router]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -23,7 +31,7 @@ export default function RegisterPage() {
       if (error) throw new Error(error.message);
 
       toast.success("Account created! Please login.");
-      router.push("/login");
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
