@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -24,15 +25,40 @@ function FailContent() {
   }, [tranId]);
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-10">
-      <h1 className="text-2xl font-bold text-red-700">Payment Failed</h1>
-      <p className="mt-2 text-slate-700">Your payment was not completed.</p>
-      <Link
-        href={eventId ? `/events/${eventId}` : "/events"}
-        className="mt-4 inline-block rounded bg-slate-900 px-4 py-2 text-white"
-      >
-        Back to Event
-      </Link>
+    <main className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="rounded-2xl border bg-white p-10 shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <span className="text-3xl">⚠️</span>
+        </div>
+
+        <h1 className="mt-5 text-2xl font-bold text-red-700">
+          Payment Failed
+        </h1>
+        <p className="mt-2 text-slate-600">
+          Your payment was not completed. Please try again.
+        </p>
+
+        {tranId && (
+          <p className="mt-3 rounded bg-slate-50 px-4 py-2 font-mono text-xs text-slate-500">
+            Transaction ID: {tranId}
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Link
+            href={eventId ? `/events/${eventId}` : "/events"}
+            className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700"
+          >
+            {eventId ? "Try Again" : "Browse Events"}
+          </Link>
+          <Link
+            href="/dashboard/my-events"
+            className="rounded-lg border px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            My Events
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }
@@ -42,7 +68,7 @@ export default function PaymentFailPage() {
     <Suspense
       fallback={
         <main className="mx-auto max-w-lg px-4 py-16 text-center">
-          <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
         </main>
       }
     >

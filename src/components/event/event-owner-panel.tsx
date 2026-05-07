@@ -75,6 +75,7 @@ export default function EventOwnerPanel({ event }: EventOwnerPanelProps) {
             await api.patch(`/participants/${event.id}/participants/${participant.userId}/${action}`);
             toast.success(`Participant ${action}d`);
             await loadParticipants();
+            router.refresh();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Failed to update participant");
         } finally {
