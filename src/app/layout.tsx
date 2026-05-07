@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Planora",
   description:
     "Plan, join, and manage events with complete workflow including invitations, payments, and reviews.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
