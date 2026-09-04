@@ -18,6 +18,40 @@ type Stats = {
   totalPayments: number;
 };
 
+function Pagination({ page, total, onPageChange }: { page: number; total: number; onPageChange: (page: number) => void }) {
+  const totalPages = Math.ceil(total / 10);
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav className="flex items-center justify-center gap-2 border-t px-4 py-4" aria-label="Pagination">
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page === 1}
+        className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Previous
+      </button>
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+        <button
+          key={pageNumber}
+          onClick={() => onPageChange(pageNumber)}
+          className={`h-9 min-w-9 rounded-lg px-3 text-sm ${pageNumber === page ? "bg-slate-900 text-white" : "border border-slate-200 hover:bg-slate-50"}`}
+          aria-current={pageNumber === page ? "page" : undefined}
+        >
+          {pageNumber}
+        </button>
+      ))}
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page === totalPages}
+        className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
 interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
@@ -74,6 +108,10 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"users" | "events">("users");
+  const [usersPage, setUsersPage] = useState(1);
+  const [eventsPage, setEventsPage] = useState(1);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [eventsTotal, setEventsTotal] = useState(0);
 
   const [confirm, setConfirm] = useState<{
     message: string;
@@ -94,26 +132,24 @@ export default function AdminPage() {
     setConfirm(null);
   };
 
-  const load = async () => {
+  const load = async (requestedUsersPage = usersPage, requestedEventsPage = eventsPage) => {
     try {
       setLoading(true);
       await ensureSession();
       const [usersRes, eventsRes, statsRes] = await Promise.all([
-        api.get<PaginatedUsers>("/admin/users"),
-        api.get<PaginatedEvents>("/admin/events"),
+        api.get<PaginatedUsers>(`/admin/users?page=${requestedUsersPage}&limit=10`),
+        api.get<PaginatedEvents>(`/admin/events?page=${requestedEventsPage}&limit=10`),
         api.get<Stats>("/admin/stats"),
       ]);
 
-      setUsers(
-        Array.isArray(usersRes)
-          ? usersRes
-          : Array.isArray(usersRes?.data) ? usersRes.data : []
-      );
-      setEvents(
-        Array.isArray(eventsRes)
-          ? eventsRes
-          : Array.isArray(eventsRes?.data) ? eventsRes.data : []
-      );
+      setUsers(Array.isArray(usersRes) ? usersRes : usersRes?.data ?? []);
+      setEvents(Array.isArray(eventsRes) ? eventsRes : eventsRes?.data ?? []);
+      setUsersTotal(Array.isArray(usersRes) ? usersRes.length : usersRes?.total ?? 0);
+      setEventsTotal(Array.isArray(eventsRes) ? eventsRes.length : eventsRes?.total ?? 0);
+      const userPageCount = Math.max(1, Math.ceil((Array.isArray(usersRes) ? usersRes.length : usersRes?.total ?? 0) / 10));
+      const eventPageCount = Math.max(1, Math.ceil((Array.isArray(eventsRes) ? eventsRes.length : eventsRes?.total ?? 0) / 10));
+      if (requestedUsersPage > userPageCount) setUsersPage(userPageCount);
+      if (requestedEventsPage > eventPageCount) setEventsPage(eventPageCount);
       setStats(statsRes);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load data");
@@ -122,7 +158,7 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [usersPage, eventsPage]);
 
   const deleteUser = async (userId: string) => {
     const confirmed = await showConfirm(
@@ -136,7 +172,7 @@ export default function AdminPage() {
         success: "User deleted successfully",
         error: (err) => err instanceof Error ? err.message : "Failed to delete user",
       });
-      await load();
+      await load(usersPage, eventsPage);
     } catch { }
   };
 
@@ -152,7 +188,7 @@ export default function AdminPage() {
         success: "Event deleted",
         error: (err) => err instanceof Error ? err.message : "Failed to delete event",
       });
-      await load();
+      await load(usersPage, eventsPage);
     } catch { }
   };
 
@@ -226,7 +262,7 @@ export default function AdminPage() {
               className={`relative px-4 py-2 text-sm font-medium capitalize transition-colors ${tab === t ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
                 }`}
             >
-              {t} ({t === "users" ? users.length : events.length})
+              {t} ({t === "users" ? usersTotal : eventsTotal})
               {tab === t && (
                 <motion.div
                   layoutId="admin-tab-indicator"
@@ -314,6 +350,11 @@ export default function AdminPage() {
                   )
                 )}
               </div>
+              <Pagination
+                page={tab === "users" ? usersPage : eventsPage}
+                total={tab === "users" ? usersTotal : eventsTotal}
+                onPageChange={tab === "users" ? setUsersPage : setEventsPage}
+              />
             </motion.section>
           </AnimatePresence>
         )}
