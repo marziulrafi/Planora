@@ -30,22 +30,29 @@ export default function EventsPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filterIdx, setFilterIdx] = useState(0);
+  const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearch = (value: string) => {
     setQuery(value);
+    setPage(1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedQuery(value), 400);
   };
 
   const filter = FILTER_OPTIONS[filterIdx];
 
+  const handleFilterChange = (idx: number) => {
+    setFilterIdx(idx);
+    setPage(1);
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
 
-        const params = new URLSearchParams({ limit: "12" });
+        const params = new URLSearchParams({ limit: "9", page: String(page) });
         if (debouncedQuery) params.set("search", debouncedQuery);
         if (filter.type) params.set("type", filter.type);
         if (filter.fee) params.set("fee", filter.fee);
@@ -60,7 +67,9 @@ export default function EventsPage() {
       }
     };
     void load();
-  }, [debouncedQuery, filterIdx]);
+  }, [debouncedQuery, filterIdx, page]);
+
+  const totalPages = Math.ceil(total / 9);
 
   return (
     <motion.main
@@ -87,7 +96,7 @@ export default function EventsPage() {
         {FILTER_OPTIONS.map((opt, idx) => (
           <button
             key={opt.label}
-            onClick={() => setFilterIdx(idx)}
+            onClick={() => handleFilterChange(idx)}
             className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
               filterIdx === idx
                 ? "bg-slate-900 text-white"
@@ -149,6 +158,35 @@ export default function EventsPage() {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="mt-8 flex items-center justify-center gap-2" aria-label="Events pagination">
+          <button
+            onClick={() => setPage((current) => current - 1)}
+            disabled={page === 1}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+            <button
+              key={pageNumber}
+              onClick={() => setPage(pageNumber)}
+              className={`h-9 min-w-9 rounded-lg px-3 text-sm ${pageNumber === page ? "bg-slate-900 text-white" : "border border-slate-200 hover:bg-slate-50"}`}
+              aria-current={pageNumber === page ? "page" : undefined}
+            >
+              {pageNumber}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage((current) => current + 1)}
+            disabled={page === totalPages}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+        </nav>
       )}
     </motion.main>
   );
