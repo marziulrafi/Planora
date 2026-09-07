@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
     const normalizeApiUrl = (url?: string) =>
       url?.replace(/\/+$/, "").replace(/\/api$/, "") || "http://localhost:5000";
 
-    const apiUrl = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
+    const apiUrl =
+      process.env.NODE_ENV === "development"
+        ? normalizeApiUrl(process.env.LOCAL_API_URL ?? "http://localhost:5000")
+        : normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
     return [
       {

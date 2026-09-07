@@ -26,7 +26,11 @@ export default function Navbar() {
         <span className="absolute inset-x-3 bottom-1 h-0.5 origin-left scale-x-0 rounded-full bg-current transition-transform duration-200 group-hover:scale-x-100" />
       </Link>
       <Link className={linkClass("/events")} href="/events" onClick={() => setMobileOpen(false)}>
-        Events
+        Upcoming Events
+        <span className="absolute inset-x-3 bottom-1 h-0.5 origin-left scale-x-0 rounded-full bg-current transition-transform duration-200 group-hover:scale-x-100" />
+      </Link>
+      <Link className={linkClass("/events/past")} href="/events/past" onClick={() => setMobileOpen(false)}>
+        Past Events
         <span className="absolute inset-x-3 bottom-1 h-0.5 origin-left scale-x-0 rounded-full bg-current transition-transform duration-200 group-hover:scale-x-100" />
       </Link>
       {isAuthenticated ? (
@@ -69,7 +73,10 @@ export default function Navbar() {
         Home
       </Link>
       <Link className={mobileLinkClass("/events")} href="/events" onClick={() => setMobileOpen(false)}>
-        Events
+        Upcoming Events
+      </Link>
+      <Link className={mobileLinkClass("/events/past")} href="/events/past" onClick={() => setMobileOpen(false)}>
+        Past Events
       </Link>
       {isAuthenticated ? (
         <>

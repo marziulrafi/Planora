@@ -19,10 +19,13 @@ const ensureApiPrefix = (url: string) => {
 
 const normalizeBaseURL = (baseURL?: string) => {
   const trimmed = baseURL?.trim();
+  const devFallback = "http://localhost:5000";
   const serverFallback =
-    process.env.API_URL?.trim() ||
-    process.env.BACKEND_URL?.trim() ||
-    "http://localhost:5000";
+    process.env.NODE_ENV === "development"
+      ? devFallback
+      : process.env.API_URL?.trim() ||
+        process.env.BACKEND_URL?.trim() ||
+        devFallback;
 
   if (!trimmed) {
     return isServer ? ensureApiPrefix(serverFallback) : "/api";
@@ -32,6 +35,10 @@ const normalizeBaseURL = (baseURL?: string) => {
   if (!isAbsolute) return trimmed;
 
   if (!isServer) return "/api";
+
+  if (process.env.NODE_ENV === "development") {
+    return ensureApiPrefix(devFallback);
+  }
 
   return ensureApiPrefix(trimmed);
 };

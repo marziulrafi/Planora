@@ -28,6 +28,13 @@ export default async function EventDetailsPage({ params }: EventPageProps) {
 
   if (!event) notFound();
 
+  const timeZone = "Asia/Dhaka";
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone });
+  const eventDayStr = new Date(event.date).toLocaleDateString("en-CA", { timeZone });
+  const isPastEvent = eventDayStr < todayStr;
+  const backHref = isPastEvent ? "/events/past" : "/events";
+  const backLabel = isPastEvent ? "Back to Past Events" : "Back to Upcoming Events";
+
   const avgRating =
     event.reviews && event.reviews.length > 0
       ? (
@@ -43,11 +50,11 @@ export default async function EventDetailsPage({ params }: EventPageProps) {
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
 
         <Link
-          href="/events"
+          href={backHref}
           className="group inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-500 transition-all duration-200 hover:bg-white hover:text-slate-900 hover:shadow-sm"
         >
           <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
-          Back to Events
+          {backLabel}
         </Link>
 
         <section className="mt-5 grid gap-5 lg:grid-cols-[1fr_300px]">
