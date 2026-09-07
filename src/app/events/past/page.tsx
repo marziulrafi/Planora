@@ -1,7 +1,11 @@
-import React from 'react'
+import EventsList from "@/src/components/event/events-list";
 
-export default function page() {
+export default function PastEventsPage() {
   return (
-    <div>page</div>
-  )
+    <EventsList
+      title="Past Events"
+      timeframe="past"
+      emptyMessage="No past events found."
+    />
+  );
 }
